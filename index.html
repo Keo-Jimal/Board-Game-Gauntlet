@@ -43,3 +43,55 @@
 </head>
 <body>
   <div id="root"></div>
+<script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Icon components
+    const CheckCircle = () => <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>;
+    const Trophy = () => <svg className="w-12 h-12 text-yellow-400 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM10 12a2 2 0 100-4 2 2 0 000 4z"/></svg>;
+    const Skull = () => <svg className="w-12 h-12 text-red-400 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 2a6 6 0 00-6 6v7a1 1 0 001 1h10a1 1 0 001-1V8a6 6 0 00-6-6zM7 10a1 1 0 112 0 1 1 0 01-2 0zm4 0a1 1 0 112 0 1 1 0 01-2 0z" clipRule="evenodd"/></svg>;
+    const Hourglass = () => <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0v-.5A1.5 1.5 0 0114.5 6c.526 0 .988-.27 1.256-.679a6.012 6.012 0 011.912 2.706A1 1 0 0117 9v2a1 1 0 11-2 0V9.065a6.014 6.014 0 01-1.256 1.615A1.5 1.5 0 0012.5 12h-5a1.5 1.5 0 01-1.244-.679A6.014 6.014 0 015 9.065V11a1 1 0 01-2 0V9a1 1 0 01.332-.973z" clipRule="evenodd"/></svg>;
+
+    const GAMES = [
+      { id: 1, game: "Wingspan", hint: "Birds of a Feather", statements: ["Players collect and play bird cards to attract visitors", "The game uses a rondel mechanism for actions", "It's an engine-building game about bird habitats"], falseIndex: 1 },
+      { id: 2, game: "Azul", hint: "Tile Style", statements: ["Players draft tiles from a central market", "The game is set in ancient Rome", "Negative points are possible for unused tiles"], falseIndex: 1 },
+      { id: 3, game: "Splendor", hint: "Crown Jewels", statements: ["Players collect gem tokens to buy development cards", "The game uses dice to determine gem availability", "Noble patrons visit players who meet requirements"], falseIndex: 1 },
+      { id: 4, game: "Catan", hint: "Settle Down", statements: ["Players roll dice to gather resources", "The game board is always the same layout", "Trading with other players is a core mechanic"], falseIndex: 1 },
+      { id: 5, game: "Ticket to Ride", hint: "All Aboard", statements: ["Players claim railway routes between cities", "The game was first published in the 1980s", "Longer routes score more points"], falseIndex: 1 },
+      { id: 6, game: "Pandemic", hint: "Outbreak Alert", statements: ["Players work cooperatively to stop global diseases", "Each player has a secret role only they know", "Disease cubes spread between connected cities"], falseIndex: 1 },
+      { id: 7, game: "7 Wonders", hint: "Ancient Glory", statements: ["Players simultaneously choose cards each turn", "The game is played over exactly seven rounds", "You develop a civilization across three ages"], falseIndex: 1 },
+      { id: 8, game: "Dominion", hint: "Build Your Kingdom", statements: ["It popularized the deck-building genre", "Players place meeples on action spaces", "You buy cards to improve your deck over time"], falseIndex: 1 },
+      { id: 9, game: "Codenames", hint: "Secret Identities", statements: ["Team spymasters give one-word clues", "Players draw cards and act out clues for teammates", "The game uses a 5x5 grid of word cards"], falseIndex: 1 },
+      { id: 10, game: "Carcassonne", hint: "Medieval Landscape", statements: ["Players place tiles to build cities and roads", "The game uses a dice-rolling combat system", "Meeples are placed on tiles to score points"], falseIndex: 1 },
+      { id: 11, game: "Scrabble", hint: "Letter Perfect", statements: ["Players form words using letter tiles", "The game was released in the 1970s", "Each letter has a different point value"], falseIndex: 1 },
+      { id: 12, game: "King of Tokyo", hint: "Monster Mash", statements: ["Players control giant monsters fighting for Tokyo", "Victory points are gained by staying in Paris", "Dice are rolled to determine actions each turn"], falseIndex: 1 }
+    ];
+
+    const DICE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+
+    const shuffleStatements = (game) => {
+      const statements = [...game.statements];
+      const falseStatement = statements[game.falseIndex];
+      for (let i = statements.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [statements[i], statements[j]] = [statements[j], statements[i]];
+      }
+      return { ...game, statements, falseIndex: statements.indexOf(falseStatement) };
+    };
+
+    const getComment = (type, data = {}) => {
+      const c = {
+        pass: ["Coward.", "Second thoughts? Good.", "Running scared?"],
+        many: [`${data.passes} passes? Commitment issues?`],
+        early: ["Lucky guess.", "One down. Eleven to go."],
+        mid: [`${data.streak} in a row. Impressive... for a human.`],
+        high: [`${data.streak} in a row! When will you slip?`],
+        low: ["One card. ONE. Your ancestors weep."],
+        midFail: [`${data.streak} cards isn't terrible. For a goblin.`],
+        highFail: [`${data.streak} cards! So close to glory.`],
+        eleven: ["ELEVEN CARDS. One away from perfection."],
+        perfect: ["12/12. I didn't think mortals could do that."],
+        confirm: ["Feeling lucky?", "Once you commit, there's no going back."]
+      };
+      return c[type][Math.floor(Math.random() * c[type].length)];
+    };
