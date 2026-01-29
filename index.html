@@ -131,6 +131,42 @@
           return { ...game, statements, falseIndex: newFalseIndex };
         };
 
+        // Helper functions for daily limit
+        const getTodayKey = () => {
+          const today = new Date();
+          return `gauntlet-${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+        };
+
+        const hasPlayedToday = () => {
+          const todayKey = getTodayKey();
+          const lastPlay = localStorage.getItem('gauntlet-last-play');
+          return lastPlay === todayKey;
+        };
+
+        const getNextPlayTime = () => {
+          const tomorrow = new Date();
+          tomorrow.setHours(24, 0, 0, 0); // Midnight tonight
+          return tomorrow;
+        };
+
+        const getTimeUntilMidnight = () => {
+          const now = new Date();
+          const midnight = new Date();
+          midnight.setHours(24, 0, 0, 0);
+          const diff = midnight - now;
+          
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          
+          return { hours, minutes, seconds, total: diff };
+        };
+
+        const savePlayToday = () => {
+          const todayKey = getTodayKey();
+          localStorage.setItem('gauntlet-last-play', todayKey);
+        };
+
         function Gauntlet() {
           const [cards, setCards] = useState(GAMES.map(g => shuffleStatements(g)).map(g => ({ ...g, state: 'hidden' })));
           const [selected, setSelected] = useState(null);
@@ -148,8 +184,36 @@
           const [diceFace, setDiceFace] = useState(DICE_FACES[Math.floor(Math.random() * 6)]);
           const [showConfetti, setShowConfetti] = useState(false);
           const [muted, setMuted] = useState(false);
+          const [alreadyPlayed, setAlreadyPlayed] = useState(false);
+          const [countdown, setCountdown] = useState(getTimeUntilMidnight());
 
           const sounds = SoundSystem();
+
+          // Check if already played today on mount
+          useEffect(() => {
+            if (hasPlayedToday()) {
+              setAlreadyPlayed(true);
+              setIntro(false); // Skip intro if locked out
+            }
+          }, []);
+
+          // Update countdown every second when locked out
+          useEffect(() => {
+            let interval;
+            if (alreadyPlayed) {
+              interval = setInterval(() => {
+                const timeLeft = getTimeUntilMidnight();
+                setCountdown(timeLeft);
+                
+                // If we've passed midnight, unlock the game
+                if (timeLeft.total <= 0) {
+                  setAlreadyPlayed(false);
+                  window.location.reload(); // Refresh to reset game
+                }
+              }, 1000);
+            }
+            return () => clearInterval(interval);
+          }, [alreadyPlayed]);
 
           useEffect(() => {
             let i;
@@ -205,6 +269,7 @@
                 setComment(getComment('perfect')); setEmoji("🤩");
                 setShowConfetti(true);
                 playSound(sounds.celebrate);
+                savePlayToday(); // Save that they played today
                 setTimeout(() => {
                   setShowConfetti(false);
                 }, 5000);
@@ -219,6 +284,7 @@
             } else {
               playSound(sounds.fail);
               setOver(true); setFinal(time);
+              savePlayToday(); // Save that they played today
               const st = solved.length;
               if (st === 11) { setComment(getComment('eleven')); setEmoji("😱"); }
               else if (st <= 2) { setComment(getComment('low')); setEmoji("😂"); }
@@ -250,6 +316,42 @@
                 <VolumeIcon muted={muted} className="w-6 h-6" />
               </button>
 
+              {/* Already Played Today Screen */}
+              {alreadyPlayed && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black p-4 sm:p-6">
+                  <div className="max-w-2xl w-full text-center">
+                    <div className="text-6xl sm:text-8xl mb-6">🔒</div>
+                    <h1 className="text-3xl sm:text-5xl font-bold mb-4 text-yellow-400">You've Already Played Today!</h1>
+                    <p className="text-lg sm:text-xl text-purple-200 mb-6">Come back tomorrow for a fresh challenge</p>
+                    
+                    <div className="bg-gradient-to-br from-yellow-100 to-amber-50 text-gray-900 rounded-2xl p-6 sm:p-8 border-4 border-yellow-600 mb-6 inline-block">
+                      <div className="text-sm font-bold text-yellow-800 mb-2 uppercase tracking-wider">Next Gauntlet In:</div>
+                      <div className="text-4xl sm:text-6xl font-bold mb-2">
+                        {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+                      </div>
+                      <div className="text-xs sm:text-sm text-gray-600">Resets at midnight</div>
+                    </div>
+
+                    <div className="bg-black bg-opacity-50 rounded-xl p-4 sm:p-6 backdrop-blur-sm mb-6">
+                      <p className="text-purple-200 text-sm sm:text-base mb-4">While you wait, check out:</p>
+                      <div className="flex gap-3 justify-center flex-wrap mb-4">
+                        <a href="https://app.merchantsofplay.com" target="_blank" rel="noopener noreferrer" className="bg-indigo-600 hover:bg-indigo-700 px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-bold touch-manipulation">Merchants of Play</a>
+                      </div>
+                      <div className="flex gap-3 justify-center flex-wrap">
+                        <a href="https://discord.gg/merchantsofplay" target="_blank" rel="noopener noreferrer" className="bg-[#5865F2] hover:bg-[#4752C4] px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-bold inline-flex items-center gap-2 touch-manipulation">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                          Join Discord
+                        </a>
+                      </div>
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-purple-400 italic">
+                      Tip: Clearing your browser cookies will let you play again, but where's the honor in that? 😉
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {showConfetti && (
                 <div className="confetti-container">
                   {[...Array(50)].map((_, i) => (
@@ -265,7 +367,10 @@
                   ))}
                 </div>
               )}
-              
+
+              {/* Main Game Content - Only show if haven't played today */}
+              {!alreadyPlayed && (
+                <>
               {intro && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black p-4 sm:p-6">
                   <div className="max-w-2xl w-full">
@@ -349,7 +454,10 @@
                     </div>
                     
                     <div className="border-t border-purple-600 pt-6">
-                      <p className="text-purple-200 text-base sm:text-lg mb-4">Come back for the next Gauntlet in 18h 23m</p>
+                      <p className="text-purple-200 text-base sm:text-lg mb-4">
+                        Come back tomorrow for the next Gauntlet!<br/>
+                        <span className="text-sm text-purple-300">Resets at midnight</span>
+                      </p>
                       <p className="text-purple-300 text-sm sm:text-base mb-3">Browse our catalog of board games at</p>
                       <div className="flex gap-3 justify-center flex-wrap mb-5">
                         <a href="https://app.merchantsofplay.com" target="_blank" rel="noopener noreferrer" className="bg-indigo-600 hover:bg-indigo-700 px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-bold touch-manipulation">Merchants of Play</a>
@@ -409,6 +517,8 @@
                     {solved.length > 0 && (
                       <div className="mt-4"><h3 className="text-xs sm:text-sm text-purple-300 mb-2">Conquered:</h3><div className="flex flex-wrap gap-2">{solved.map(c => <div key={c.id} className="bg-green-900 bg-opacity-50 px-2 py-1 rounded text-xs border border-green-600">✓ {c.game}</div>)}</div></div>
                     )}
+                  </>
+                )}
                   </>
                 )}
               </div>
@@ -543,7 +653,7 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<Gauntlet />);
 
-        console.log('✅ Board Game Gauntlet Phase 1A loaded - Mobile optimized with real sound effects!');
+        console.log('✅ Board Game Gauntlet Phase 1B loaded - Mobile + Sounds + Daily Limit!');
     </script>
 </body>
 </html>
