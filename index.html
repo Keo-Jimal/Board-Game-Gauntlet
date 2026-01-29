@@ -26,17 +26,16 @@
             celebrate: new Audio('./sounds/victory.mp3')
           });
 
-          // Set volume for all sounds
           useEffect(() => {
             Object.values(sounds.current).forEach(sound => {
-              sound.volume = 0.5; // 50% volume
+              sound.volume = 0.5;
             });
           }, []);
 
           const playSound = (soundName) => {
             const sound = sounds.current[soundName];
             if (sound) {
-              sound.currentTime = 0; // Reset to start
+              sound.currentTime = 0;
               sound.play().catch(e => console.log('Sound play failed:', e));
             }
           };
@@ -50,7 +49,6 @@
           };
         };
 
-        // Volume/Mute icon component
         const VolumeIcon = ({ muted, ...props }) => (
           muted ? (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -66,7 +64,6 @@
           )
         );
 
-        // Simple icon components
         const CheckCircle = (props) => (
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
         );
@@ -131,7 +128,7 @@
           return { ...game, statements, falseIndex: newFalseIndex };
         };
 
-        // Helper functions for daily limit
+        // Daily limit helper functions
         const getTodayKey = () => {
           const today = new Date();
           return `gauntlet-${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
@@ -141,12 +138,6 @@
           const todayKey = getTodayKey();
           const lastPlay = localStorage.getItem('gauntlet-last-play');
           return lastPlay === todayKey;
-        };
-
-        const getNextPlayTime = () => {
-          const tomorrow = new Date();
-          tomorrow.setHours(24, 0, 0, 0); // Midnight tonight
-          return tomorrow;
         };
 
         const getTimeUntilMidnight = () => {
@@ -189,26 +180,22 @@
 
           const sounds = SoundSystem();
 
-          // Check if already played today on mount
           useEffect(() => {
             if (hasPlayedToday()) {
               setAlreadyPlayed(true);
-              setIntro(false); // Skip intro if locked out
+              setIntro(false);
             }
           }, []);
 
-          // Update countdown every second when locked out
           useEffect(() => {
             let interval;
             if (alreadyPlayed) {
               interval = setInterval(() => {
                 const timeLeft = getTimeUntilMidnight();
                 setCountdown(timeLeft);
-                
-                // If we've passed midnight, unlock the game
                 if (timeLeft.total <= 0) {
                   setAlreadyPlayed(false);
-                  window.location.reload(); // Refresh to reset game
+                  window.location.reload();
                 }
               }, 1000);
             }
@@ -269,10 +256,8 @@
                 setComment(getComment('perfect')); setEmoji("🤩");
                 setShowConfetti(true);
                 playSound(sounds.celebrate);
-                savePlayToday(); // Save that they played today
-                setTimeout(() => {
-                  setShowConfetti(false);
-                }, 5000);
+                savePlayToday();
+                setTimeout(() => setShowConfetti(false), 5000);
               } else if (s.length <= 2) {
                 setComment(getComment('early')); setEmoji("🤨");
               } else if (s.length <= 6) {
@@ -284,7 +269,7 @@
             } else {
               playSound(sounds.fail);
               setOver(true); setFinal(time);
-              savePlayToday(); // Save that they played today
+              savePlayToday();
               const st = solved.length;
               if (st === 11) { setComment(getComment('eleven')); setEmoji("😱"); }
               else if (st <= 2) { setComment(getComment('low')); setEmoji("😂"); }
@@ -307,7 +292,6 @@
 
           return (
             <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 text-white">
-              {/* Mute Button - Fixed Position */}
               <button 
                 onClick={() => setMuted(!muted)}
                 className="fixed top-4 right-4 z-50 bg-black bg-opacity-50 hover:bg-opacity-70 p-3 rounded-full transition backdrop-blur-sm"
@@ -316,7 +300,6 @@
                 <VolumeIcon muted={muted} className="w-6 h-6" />
               </button>
 
-              {/* Already Played Today Screen */}
               {alreadyPlayed && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black p-4 sm:p-6">
                   <div className="max-w-2xl w-full text-center">
@@ -367,11 +350,8 @@
                   ))}
                 </div>
               )}
-
-              {/* Main Game Content - Only show if haven't played today */}
-              {!alreadyPlayed && (
-                <>
-              {intro && (
+              
+              {!alreadyPlayed && intro && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black p-4 sm:p-6">
                   <div className="max-w-2xl w-full">
                     <div className="text-center mb-4 sm:mb-6">
@@ -396,129 +376,131 @@
                 </div>
               )}
 
-              <div className="p-3 sm:p-4 max-w-6xl mx-auto">
-                {!over && (
-                  <>
-                    <div className="text-center mb-4">
-                      <h1 className="text-2xl sm:text-3xl font-bold mb-2">⚔️ Board Game Gauntlet ⚔️</h1>
-                      <div className="flex justify-center gap-3 sm:gap-6 text-base sm:text-lg flex-wrap">
-                        <div className="flex items-center gap-2"><Hourglass className="w-4 h-4 sm:w-5 sm:h-5"/>{started ? fmt(time) : '0:00'}</div>
-                        <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-400"/>{solved.length}/12</div>
-                        <div className="flex items-center gap-2">🐔 {passes}</div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-yellow-100 to-yellow-50 text-gray-900 rounded-2xl p-4 sm:p-6 border-4 border-yellow-600 mb-4 sm:mb-6 relative max-w-2xl mx-auto">
-                      <div className="flex gap-3 sm:gap-4 items-center justify-center">
-                        <div className="text-3xl sm:text-5xl flex-shrink-0">{emoji}</div>
-                        <div className="text-center flex-1">
-                          <div className="text-xs font-bold text-yellow-800 mb-1 sm:mb-2 uppercase tracking-wider">The Dungeon Master</div>
-                          <div className="text-base sm:text-xl italic font-medium leading-relaxed">{comment}</div>
+              {!alreadyPlayed && !intro && (
+                <div className="p-3 sm:p-4 max-w-6xl mx-auto">
+                  {!over && (
+                    <>
+                      <div className="text-center mb-4">
+                        <h1 className="text-2xl sm:text-3xl font-bold mb-2">⚔️ Board Game Gauntlet ⚔️</h1>
+                        <div className="flex justify-center gap-3 sm:gap-6 text-base sm:text-lg flex-wrap">
+                          <div className="flex items-center gap-2"><Hourglass className="w-4 h-4 sm:w-5 sm:h-5"/>{started ? fmt(time) : '0:00'}</div>
+                          <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-400"/>{solved.length}/12</div>
+                          <div className="flex items-center gap-2">🐔 {passes}</div>
                         </div>
                       </div>
-                      <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[15px] border-t-yellow-600"></div>
-                    </div>
-                  </>
-                )}
 
-                {over && (
-                  <div className="bg-black bg-opacity-70 rounded-lg p-4 sm:p-6 mb-6 text-center border-2 border-purple-400">
-                    {won ? <><Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-yellow-400 mx-auto mb-3"/><h2 className="text-xl sm:text-2xl font-bold text-yellow-400 mb-2">PERFECT RUN! 🏆</h2></> : <><Skull className="w-10 h-10 sm:w-12 sm:h-12 text-red-400 mx-auto mb-3"/><h2 className="text-xl sm:text-2xl font-bold text-red-400 mb-2">RUN ENDED</h2></>}
-                    
-                    <div className="bg-gradient-to-br from-yellow-100 to-yellow-50 text-gray-900 rounded-2xl p-4 sm:p-5 border-4 border-yellow-600 mb-4 inline-block max-w-md">
-                      <div className="flex gap-3 items-center">
-                        <div className="text-2xl sm:text-3xl">{emoji}</div>
-                        <div className="text-left">
-                          <div className="text-xs font-bold text-yellow-800 mb-1">THE DUNGEON MASTER</div>
-                          <div className="text-sm sm:text-base italic">"{comment}"</div>
+                      <div className="bg-gradient-to-br from-yellow-100 to-yellow-50 text-gray-900 rounded-2xl p-4 sm:p-6 border-4 border-yellow-600 mb-4 sm:mb-6 relative max-w-2xl mx-auto">
+                        <div className="flex gap-3 sm:gap-4 items-center justify-center">
+                          <div className="text-3xl sm:text-5xl flex-shrink-0">{emoji}</div>
+                          <div className="text-center flex-1">
+                            <div className="text-xs font-bold text-yellow-800 mb-1 sm:mb-2 uppercase tracking-wider">The Dungeon Master</div>
+                            <div className="text-base sm:text-xl italic font-medium leading-relaxed">{comment}</div>
+                          </div>
+                        </div>
+                        <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[15px] border-t-yellow-600"></div>
+                      </div>
+                    </>
+                  )}
+
+                  {over && (
+                    <div className="bg-black bg-opacity-70 rounded-lg p-4 sm:p-6 mb-6 text-center border-2 border-purple-400">
+                      {won ? <><Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-yellow-400 mx-auto mb-3"/><h2 className="text-xl sm:text-2xl font-bold text-yellow-400 mb-2">PERFECT RUN! 🏆</h2></> : <><Skull className="w-10 h-10 sm:w-12 sm:h-12 text-red-400 mx-auto mb-3"/><h2 className="text-xl sm:text-2xl font-bold text-red-400 mb-2">RUN ENDED</h2></>}
+                      
+                      <div className="bg-gradient-to-br from-yellow-100 to-yellow-50 text-gray-900 rounded-2xl p-4 sm:p-5 border-4 border-yellow-600 mb-4 inline-block max-w-md">
+                        <div className="flex gap-3 items-center">
+                          <div className="text-2xl sm:text-3xl">{emoji}</div>
+                          <div className="text-left">
+                            <div className="text-xs font-bold text-yellow-800 mb-1">THE DUNGEON MASTER</div>
+                            <div className="text-sm sm:text-base italic">"{comment}"</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="mb-4 text-base sm:text-lg"><div>Streak: <span className="font-bold">{solved.length}/12</span></div><div>Time: <span className="font-bold">{fmt(final)}</span></div><div>Passes: <span className="font-bold">{passes} {'🐔'.repeat(Math.min(passes,3))}</span></div></div>
-                    
-                    <div className="flex gap-2 justify-center flex-wrap mb-6">
-                      <button onClick={() => {
-                        const text = share();
-                        navigator.clipboard.writeText(text).then(() => {
-                          alert('Results copied to clipboard!');
-                        }).catch(() => {
-                          alert('Failed to copy. Please try selecting and copying manually.');
-                        });
-                      }} className="bg-purple-600 hover:bg-purple-700 px-3 sm:px-4 py-2 rounded font-bold text-sm sm:text-base touch-manipulation">📋 Copy Results</button>
-                      <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(share())}`} target="_blank" rel="noopener noreferrer" className="bg-black hover:bg-gray-900 px-3 sm:px-4 py-2 rounded font-bold inline-flex items-center gap-2 text-sm sm:text-base touch-manipulation">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                        Share on X
-                      </a>
-                      <a href={`https://www.facebook.com/sharer/sharer.php?u=https://merchantsofplay.com&quote=${encodeURIComponent(share())}`} target="_blank" rel="noopener noreferrer" className="bg-blue-700 hover:bg-blue-800 px-3 sm:px-4 py-2 rounded font-bold text-sm sm:text-base touch-manipulation">📘 Facebook</a>
-                    </div>
-                    
-                    <div className="border-t border-purple-600 pt-6">
-                      <p className="text-purple-200 text-base sm:text-lg mb-4">
-                        Come back tomorrow for the next Gauntlet!<br/>
-                        <span className="text-sm text-purple-300">Resets at midnight</span>
-                      </p>
-                      <p className="text-purple-300 text-sm sm:text-base mb-3">Browse our catalog of board games at</p>
-                      <div className="flex gap-3 justify-center flex-wrap mb-5">
-                        <a href="https://app.merchantsofplay.com" target="_blank" rel="noopener noreferrer" className="bg-indigo-600 hover:bg-indigo-700 px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-bold touch-manipulation">Merchants of Play</a>
-                      </div>
-                      <p className="text-purple-300 text-sm sm:text-base mb-3">Join our community of board gamers</p>
-                      <div className="flex gap-3 justify-center flex-wrap">
-                        <a href="https://discord.gg/merchantsofplay" target="_blank" rel="noopener noreferrer" className="bg-[#5865F2] hover:bg-[#4752C4] px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-bold inline-flex items-center gap-2 touch-manipulation">
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/></svg>
-                          Discord
+                      <div className="mb-4 text-base sm:text-lg"><div>Streak: <span className="font-bold">{solved.length}/12</span></div><div>Time: <span className="font-bold">{fmt(final)}</span></div><div>Passes: <span className="font-bold">{passes} {'🐔'.repeat(Math.min(passes,3))}</span></div></div>
+                      
+                      <div className="flex gap-2 justify-center flex-wrap mb-6">
+                        <button onClick={() => {
+                          const text = share();
+                          navigator.clipboard.writeText(text).then(() => {
+                            alert('Results copied to clipboard!');
+                          }).catch(() => {
+                            alert('Failed to copy. Please try selecting and copying manually.');
+                          });
+                        }} className="bg-purple-600 hover:bg-purple-700 px-3 sm:px-4 py-2 rounded font-bold text-sm sm:text-base touch-manipulation">📋 Copy Results</button>
+                        <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(share())}`} target="_blank" rel="noopener noreferrer" className="bg-black hover:bg-gray-900 px-3 sm:px-4 py-2 rounded font-bold inline-flex items-center gap-2 text-sm sm:text-base touch-manipulation">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                          Share on X
                         </a>
+                        <a href={`https://www.facebook.com/sharer/sharer.php?u=https://merchantsofplay.com&quote=${encodeURIComponent(share())}`} target="_blank" rel="noopener noreferrer" className="bg-blue-700 hover:bg-blue-800 px-3 sm:px-4 py-2 rounded font-bold text-sm sm:text-base touch-manipulation">📘 Facebook</a>
+                      </div>
+                      
+                      <div className="border-t border-purple-600 pt-6">
+                        <p className="text-purple-200 text-base sm:text-lg mb-4">
+                          Come back tomorrow for the next Gauntlet!<br/>
+                          <span className="text-sm text-purple-300">Resets at midnight</span>
+                        </p>
+                        <p className="text-purple-300 text-sm sm:text-base mb-3">Browse our catalog of board games at</p>
+                        <div className="flex gap-3 justify-center flex-wrap mb-5">
+                          <a href="https://app.merchantsofplay.com" target="_blank" rel="noopener noreferrer" className="bg-indigo-600 hover:bg-indigo-700 px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-bold touch-manipulation">Merchants of Play</a>
+                        </div>
+                        <p className="text-purple-300 text-sm sm:text-base mb-3">Join our community of board gamers</p>
+                        <div className="flex gap-3 justify-center flex-wrap">
+                          <a href="https://discord.gg/merchantsofplay" target="_blank" rel="noopener noreferrer" className="bg-[#5865F2] hover:bg-[#4752C4] px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-bold inline-flex items-center gap-2 touch-manipulation">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                            Discord
+                          </a>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {!over && (
-                  <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 mb-4">
-                      {av.map(c => c.state === 'hidden' && (
-                        <div key={c.id} onClick={() => click(c.id)} className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg p-3 sm:p-4 cursor-pointer hover:scale-105 active:scale-95 transition border-2 border-purple-400 min-h-[100px] sm:h-28 flex items-center justify-center touch-manipulation">
-                          <div className="text-center"><div className="text-base sm:text-sm mb-1">🎴</div><div className="text-xs italic leading-tight">"{c.hint}"</div></div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {selected && cards.find(c => c.id === selected)?.state === 'hidden' && (
-                      <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
-                        <div className="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-lg p-4 sm:p-6 border-4 border-yellow-500 max-w-lg w-full">
-                          <div className="text-center mb-4">
-                            <div className="text-xl sm:text-2xl font-bold mb-2">"{cards.find(c => c.id === selected).hint}"</div>
-                            <div className="text-sm text-gray-300">Accept this challenge?</div>
+                  {!over && (
+                    <>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 mb-4">
+                        {av.map(c => c.state === 'hidden' && (
+                          <div key={c.id} onClick={() => click(c.id)} className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg p-3 sm:p-4 cursor-pointer hover:scale-105 active:scale-95 transition border-2 border-purple-400 min-h-[100px] sm:h-28 flex items-center justify-center touch-manipulation">
+                            <div className="text-center"><div className="text-base sm:text-sm mb-1">🎴</div><div className="text-xs italic leading-tight">"{c.hint}"</div></div>
                           </div>
-                          <div className="flex gap-3 justify-center">
-                            <button onClick={commit} className="bg-green-600 hover:bg-green-700 active:bg-green-800 px-6 sm:px-8 py-3 rounded-lg font-bold text-sm sm:text-base touch-manipulation">I'll Take It</button>
-                            <button onClick={pass} className="bg-gray-600 hover:bg-gray-700 active:bg-gray-800 px-6 sm:px-8 py-3 rounded-lg font-bold text-sm sm:text-base touch-manipulation">Pass 🐔</button>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    )}
 
-                    {selected && cards.find(c => c.id === selected)?.state === 'revealed' && (
-                      <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4 overflow-y-auto">
-                        <div className="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-lg p-4 sm:p-6 border-4 border-red-500 max-w-2xl w-full animate-cardFlip my-auto">
-                          <div className="text-center mb-4">
-                            <div className="text-2xl sm:text-3xl font-bold mb-2">{cards.find(c => c.id === selected).game}</div>
-                            <div className="text-yellow-400 mb-3 text-sm sm:text-base">Which statement is FALSE?</div>
-                          </div>
-                          <div className="space-y-2">
-                            {cards.find(c => c.id === selected).statements.map((s, i) => (
-                              <button key={i} onClick={() => answer(selected, i)} className="w-full text-left p-3 sm:p-4 rounded bg-gray-800 hover:bg-gray-700 active:bg-gray-600 border-2 border-gray-600 hover:border-yellow-500 transition text-sm sm:text-base leading-snug touch-manipulation">{s}</button>
-                            ))}
+                      {selected && cards.find(c => c.id === selected)?.state === 'hidden' && (
+                        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
+                          <div className="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-lg p-4 sm:p-6 border-4 border-yellow-500 max-w-lg w-full">
+                            <div className="text-center mb-4">
+                              <div className="text-xl sm:text-2xl font-bold mb-2">"{cards.find(c => c.id === selected).hint}"</div>
+                              <div className="text-sm text-gray-300">Accept this challenge?</div>
+                            </div>
+                            <div className="flex gap-3 justify-center">
+                              <button onClick={commit} className="bg-green-600 hover:bg-green-700 active:bg-green-800 px-6 sm:px-8 py-3 rounded-lg font-bold text-sm sm:text-base touch-manipulation">I'll Take It</button>
+                              <button onClick={pass} className="bg-gray-600 hover:bg-gray-700 active:bg-gray-800 px-6 sm:px-8 py-3 rounded-lg font-bold text-sm sm:text-base touch-manipulation">Pass 🐔</button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {solved.length > 0 && (
-                      <div className="mt-4"><h3 className="text-xs sm:text-sm text-purple-300 mb-2">Conquered:</h3><div className="flex flex-wrap gap-2">{solved.map(c => <div key={c.id} className="bg-green-900 bg-opacity-50 px-2 py-1 rounded text-xs border border-green-600">✓ {c.game}</div>)}</div></div>
-                    )}
-                  </div>
-                </>
+                      {selected && cards.find(c => c.id === selected)?.state === 'revealed' && (
+                        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4 overflow-y-auto">
+                          <div className="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-lg p-4 sm:p-6 border-4 border-red-500 max-w-2xl w-full animate-cardFlip my-auto">
+                            <div className="text-center mb-4">
+                              <div className="text-2xl sm:text-3xl font-bold mb-2">{cards.find(c => c.id === selected).game}</div>
+                              <div className="text-yellow-400 mb-3 text-sm sm:text-base">Which statement is FALSE?</div>
+                            </div>
+                            <div className="space-y-2">
+                              {cards.find(c => c.id === selected).statements.map((s, i) => (
+                                <button key={i} onClick={() => answer(selected, i)} className="w-full text-left p-3 sm:p-4 rounded bg-gray-800 hover:bg-gray-700 active:bg-gray-600 border-2 border-gray-600 hover:border-yellow-500 transition text-sm sm:text-base leading-snug touch-manipulation">{s}</button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {solved.length > 0 && (
+                        <div className="mt-4"><h3 className="text-xs sm:text-sm text-purple-300 mb-2">Conquered:</h3><div className="flex flex-wrap gap-2">{solved.map(c => <div key={c.id} className="bg-green-900 bg-opacity-50 px-2 py-1 rounded text-xs border border-green-600">✓ {c.game}</div>)}</div></div>
+                      )}
+                    </>
+                  )}
+                </div>
               )}
 
               <style>{`
@@ -631,7 +613,6 @@
                   animation: confettiFall 3s linear forwards;
                 }
                 
-                /* Mobile-specific improvements */
                 .touch-manipulation {
                   touch-action: manipulation;
                   -webkit-tap-highlight-color: transparent;
@@ -647,7 +628,6 @@
           );
         }
 
-        // Render the app
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<Gauntlet />);
 
