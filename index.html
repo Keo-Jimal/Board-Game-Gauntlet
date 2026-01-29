@@ -16,70 +16,37 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // Sound System using Web Audio API
+        // Sound System using real audio files
         const SoundSystem = () => {
-          const audioContext = useRef(null);
-          
-          const initAudio = () => {
-            if (!audioContext.current) {
-              audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            return audioContext.current;
-          };
+          const sounds = useRef({
+            diceRoll: new Audio('./sounds/dice-roll.mp3'),
+            cardFlip: new Audio('./sounds/card-flip.mp3'),
+            success: new Audio('./sounds/success.mp3'),
+            fail: new Audio('./sounds/wrong.mp3'),
+            celebrate: new Audio('./sounds/victory.mp3')
+          });
 
-          const playTone = (frequency, duration, type = 'sine', volume = 0.3) => {
-            const ctx = initAudio();
-            const oscillator = ctx.createOscillator();
-            const gainNode = ctx.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(ctx.destination);
-            
-            oscillator.frequency.value = frequency;
-            oscillator.type = type;
-            gainNode.gain.value = volume;
-            
-            oscillator.start(ctx.currentTime);
-            oscillator.stop(ctx.currentTime + duration);
+          // Set volume for all sounds
+          useEffect(() => {
+            Object.values(sounds.current).forEach(sound => {
+              sound.volume = 0.5; // 50% volume
+            });
+          }, []);
+
+          const playSound = (soundName) => {
+            const sound = sounds.current[soundName];
+            if (sound) {
+              sound.currentTime = 0; // Reset to start
+              sound.play().catch(e => console.log('Sound play failed:', e));
+            }
           };
 
           return {
-            diceRoll: () => {
-              // Quick ascending tones for dice roll
-              const ctx = initAudio();
-              [200, 300, 400, 500].forEach((freq, i) => {
-                setTimeout(() => playTone(freq, 0.05, 'square', 0.2), i * 50);
-              });
-            },
-            
-            success: () => {
-              // Happy ascending chord
-              const ctx = initAudio();
-              playTone(523.25, 0.15, 'sine', 0.3); // C
-              setTimeout(() => playTone(659.25, 0.15, 'sine', 0.3), 50); // E
-              setTimeout(() => playTone(783.99, 0.3, 'sine', 0.3), 100); // G
-            },
-            
-            fail: () => {
-              // Sad descending tones
-              playTone(400, 0.15, 'square', 0.3);
-              setTimeout(() => playTone(300, 0.15, 'square', 0.3), 100);
-              setTimeout(() => playTone(200, 0.3, 'square', 0.3), 200);
-            },
-            
-            cardFlip: () => {
-              // Quick whoosh sound
-              playTone(800, 0.08, 'triangle', 0.2);
-              setTimeout(() => playTone(400, 0.08, 'triangle', 0.15), 40);
-            },
-            
-            celebrate: () => {
-              // Victory fanfare
-              const notes = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, C
-              notes.forEach((freq, i) => {
-                setTimeout(() => playTone(freq, 0.2, 'sine', 0.3), i * 100);
-              });
-            }
+            diceRoll: () => playSound('diceRoll'),
+            success: () => playSound('success'),
+            fail: () => playSound('fail'),
+            cardFlip: () => playSound('cardFlip'),
+            celebrate: () => playSound('celebrate')
           };
         };
 
@@ -193,7 +160,7 @@
           }, [started, over, start]);
 
           const playSound = (soundFn) => {
-            if (!muted) {
+            if (!muted && soundFn) {
               try {
                 soundFn();
               } catch (e) {
@@ -237,8 +204,8 @@
                 setWon(true); setOver(true); setFinal(time);
                 setComment(getComment('perfect')); setEmoji("🤩");
                 setShowConfetti(true);
+                playSound(sounds.celebrate);
                 setTimeout(() => {
-                  playSound(sounds.celebrate);
                   setShowConfetti(false);
                 }, 5000);
               } else if (s.length <= 2) {
@@ -576,7 +543,7 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<Gauntlet />);
 
-        console.log('✅ Board Game Gauntlet Phase 1A loaded - Mobile optimized with sound effects!');
+        console.log('✅ Board Game Gauntlet Phase 1A loaded - Mobile optimized with real sound effects!');
     </script>
 </body>
 </html>
